@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PMF Marketing Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 0.9s linear infinite; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.4s ease both; }
+
+    @keyframes pulse-ring {
+      0%   { transform: scale(1);   opacity: 0.6; }
+      70%  { transform: scale(1.6); opacity: 0; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+    .pulse-dot::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 9999px;
+      background: #6366f1;
+      animation: pulse-ring 1.4s ease-out infinite;
+    }
+
+    .card-hover { transition: box-shadow 0.15s ease, transform 0.15s ease; }
+    .card-hover:hover { box-shadow: 0 8px 24px rgba(99,102,241,0.12); transform: translateY(-1px); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+    .rice-bar { transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 antialiased" x-data="pmfApp()" x-cloak>
+
+  <!-- NAV -->
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.5l7-7 4 4 7-7"/>
+          </svg>
+        </div>
+        <span class="font-semibold text-slate-900 text-sm tracking-tight">PMF Marketing</span>
+      </div>
+      <div class="flex items-center gap-1" x-show="!results">
+        <template x-for="s in [1,2,3]" :key="s">
+          <div class="flex items-center gap-1">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors"
+                 :class="step === s ? 'bg-indigo-600 text-white' : (step > s ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400')"
+                 x-text="s"></div>
+            <div x-show="s < 3" class="w-8 h-px" :class="step > s ? 'bg-indigo-300' : 'bg-slate-200'"></div>
+          </div>
+        </template>
+      </div>
+      <button x-show="results" @click="reset()" class="text-sm text-slate-500 hover:text-indigo-600 font-medium transition-colors">
+        ← Start over
+      </button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section x-show="step === 0" class="fade-up">
+    <div class="max-w-2xl mx-auto px-6 pt-20 pb-16 text-center">
+      <div class="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
+        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+        Built for B2B SaaS founders
+      </div>
+      <h1 class="text-4xl sm:text-5xl font-bold text-slate-900 leading-tight mb-4">
+        Prove product-market fit<br>
+        <span class="text-indigo-600">with marketing.</span>
+      </h1>
+      <p class="text-slate-500 text-lg leading-relaxed mb-10 max-w-lg mx-auto">
+        Drop in your website and answer a few questions. Get back a complete
+        positioning check, buyer journey map, and five testable campaign
+        premises — powered by Claude AI.
+      </p>
+      <button @click="step = 1"
+              class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-7 py-3 rounded-xl transition-colors shadow-lg shadow-indigo-200">
+        Get started
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+        </svg>
+      </button>
+      <p class="text-xs text-slate-400 mt-4">Free to use · Bring your own Claude API key · No data stored</p>
+    </div>
+    <div class="max-w-5xl mx-auto px-6 pb-20">
+      <div class="grid sm:grid-cols-3 gap-4">
+        <template x-for="item in features" :key="item.title">
+          <div class="bg-white rounded-2xl p-6 border border-slate-100 card-hover">
+            <div class="w-10 h-10 rounded-xl mb-4 flex items-center justify-center" :class="item.bg">
+              <span class="text-xl" x-text="item.icon"></span>
+            </div>
+            <h3 class="font-semibold text-slate-900 mb-1.5" x-text="item.title"></h3>
+            <p class="text-sm text-slate-500 leading-relaxed" x-text="item.desc"></p>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORM -->
+  <div class="max-w-2xl mx-auto px-6 py-12" x-show="step > 0 && step <= 3 && !isLoading && !results">
+
+    <!-- Step 1 -->
+    <div x-show="step === 1" class="fade-up">
+      <h2 class="text-2xl font-bold text-slate-900 mb-1">Your product</h2>
+      <p class="text-slate-500 mb-8">Tell us what you've built and who it's for.</p>
+      <div class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">Product name <span class="text-red-400">*</span></label>
+          <input type="text" x-model="form.product_name" placeholder="e.g. Acme Analytics"
+                 class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">One-line description <span class="text-red-400">*</span></label>
+          <input type="text" x-model="form.description" placeholder="e.g. Revenue intelligence for mid-market SaaS sales teams"
+                 class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">Website URL</label>
+          <input type="url" x-model="form.website_url" placeholder="https://yourproduct.com"
+                 class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" />
+          <p class="text-xs text-slate-400 mt-1.5">We'll read your homepage to ground the analysis in your actual positioning.</p>
+        </div>
+      </div>
+      <div class="flex justify-end mt-8">
+        <button @click="nextStep()" :disabled="!form.product_name || !form.description"
+                class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition-colors">
+          Next
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div x-show="step === 2" class="fade-up">
+      <h2 class="text-2xl font-bold text-slate-900 mb-1">Marketing context</h2>
+      <p class="text-slate-500 mb-8">Three quick questions that sharpen the output significantly.</p>
+      <div class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Company stage <span class="text-red-400">*</span></label>
+          <div class="grid grid-cols-2 gap-2.5">
+            <template x-for="s in stages" :key="s.value">
+              <button @click="form.stage = s.value"
+                      class="px-4 py-2.5 rounded-xl border text-sm font-medium text-left transition-all"
+                      :class="form.stage === s.value ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'">
+                <span class="font-semibold" x-text="s.label"></span>
+                <span class="block text-xs text-slate-400 mt-0.5" x-text="s.sub"></span>
+              </button>
+            </template>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">Ideal customer profile (ICP) <span class="text-red-400">*</span></label>
+          <input type="text" x-model="form.icp"
+                 placeholder="e.g. VP of Marketing at Series A–B SaaS companies (20–200 employees)"
+                 class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">Biggest marketing challenge right now <span class="text-red-400">*</span></label>
+          <textarea x-model="form.challenge" rows="3"
+                    placeholder="e.g. Good word-of-mouth but no repeatable channel. Not sure which buyer segment converts best."
+                    class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition resize-none"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-between mt-8">
+        <button @click="step = 1" class="text-sm text-slate-500 hover:text-slate-700 font-medium transition-colors">← Back</button>
+        <button @click="nextStep()" :disabled="!form.stage || !form.icp || !form.challenge"
+                class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition-colors">
+          Next
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div x-show="step === 3" class="fade-up">
+      <h2 class="text-2xl font-bold text-slate-900 mb-1">Extra context <span class="text-slate-400 font-normal text-xl">(optional)</span></h2>
+      <p class="text-slate-500 mb-8">A pitch deck gives the AI much richer material to work with.</p>
+      <div class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">Pitch deck or one-pager (PDF)</label>
+          <div class="relative border-2 border-dashed rounded-xl p-6 text-center transition-colors"
+               :class="form.deck_file ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 hover:border-slate-300 bg-white'">
+            <input type="file" accept=".pdf" @change="handleFile($event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+            <div x-show="!form.deck_file">
+              <svg class="w-8 h-8 text-slate-300 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              </svg>
+              <p class="text-sm text-slate-500">Drop a PDF here or <span class="text-indigo-600 font-medium">click to browse</span></p>
+              <p class="text-xs text-slate-400 mt-1">Up to 10 pages · PDF only</p>
+            </div>
+            <div x-show="form.deck_file" class="flex items-center justify-center gap-3">
+              <svg class="w-8 h-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              <div class="text-left">
+                <p class="text-sm font-medium text-slate-800" x-text="form.deck_file?.name"></p>
+                <button @click.stop="form.deck_file = null" class="text-xs text-red-400 hover:text-red-600 mt-0.5">Remove</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">
+            Anthropic API key
+            <span class="font-normal text-slate-400 ml-1">· if not set via <code class="bg-slate-100 px-1 rounded text-xs">ANTHROPIC_API_KEY</code> env var</span>
+          </label>
+          <input type="password" x-model="form.api_key" placeholder="sk-ant-..."
+                 class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" />
+          <p class="text-xs text-slate-400 mt-1.5">Never stored. Sent only to the Anthropic API for this request.</p>
+        </div>
+      </div>
+      <div class="flex justify-between mt-8">
+        <button @click="step = 2" class="text-sm text-slate-500 hover:text-slate-700 font-medium transition-colors">← Back</button>
+        <button @click="analyze()"
+                class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors shadow-lg shadow-indigo-200">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+          Generate framework
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div x-show="isLoading" class="max-w-2xl mx-auto px-6 py-24 text-center fade-up">
+    <div class="relative inline-flex mb-6">
+      <div class="pulse-dot relative w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center">
+        <svg class="spinner w-6 h-6 text-white" fill="none" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="30 60" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+    <h2 class="text-xl font-semibold text-slate-900 mb-2">Analysing your product…</h2>
+    <p class="text-slate-500 text-sm max-w-sm mx-auto" x-text="loadingMessage"></p>
+  </div>
+
+  <!-- ERROR -->
+  <div x-show="errorMsg" class="max-w-2xl mx-auto px-6 py-12 fade-up">
+    <div class="bg-red-50 border border-red-200 rounded-2xl p-6">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+          <h3 class="font-semibold text-red-800 mb-1">Something went wrong</h3>
+          <p class="text-sm text-red-700" x-text="errorMsg"></p>
+          <button @click="errorMsg = ''; step = 3" class="mt-3 text-sm font-medium text-red-600 hover:text-red-800 underline">Try again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div x-show="results" class="max-w-5xl mx-auto px-6 pb-20 fade-up">
+
+    <div class="py-10 border-b border-slate-200 mb-10">
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p class="text-xs font-semibold text-indigo-600 uppercase tracking-widest mb-2">Prove PMF with Marketing</p>
+          <h1 class="text-3xl font-bold text-slate-900" x-text="results?.company_name"></h1>
+          <p class="text-slate-500 mt-1 text-sm">Generated <span x-text="generatedAt"></span> · Powered by Claude AI</p>
+        </div>
+        <button @click="exportMarkdown()"
+                class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300 px-4 py-2 rounded-xl transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Export Markdown
+        </button>
+      </div>
+    </div>
+
+    <!-- 1. POSITIONING -->
+    <section class="mb-14">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-sm">🎯</div>
+        <h2 class="text-xl font-bold text-slate-900">Positioning Check</h2>
+      </div>
+      <p class="text-sm text-slate-500 mb-6 max-w-2xl">Applies April Dunford's positioning methodology to your product based on publicly observable signals. Where the analysis matches your intent, positioning is landing. Where there's a gap — that's where to focus.</p>
+      <div class="bg-white rounded-2xl border border-slate-100 p-6 mb-4 card-hover">
+        <div class="flex flex-wrap gap-4">
+          <div class="flex-1 min-w-48">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Product</p>
+            <p class="font-semibold text-slate-900" x-text="results?.positioning?.product_description"></p>
+          </div>
+          <div class="flex-1 min-w-48">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Market category</p>
+            <p class="font-semibold text-slate-900" x-text="results?.positioning?.market_category"></p>
+          </div>
+          <div class="flex-1 min-w-48">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Ownable frame</p>
+            <p class="font-medium text-indigo-700 italic" x-text="'&quot;' + (results?.positioning?.market_frame || '') + '&quot;'"></p>
+          </div>
+        </div>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-white rounded-2xl border border-slate-100 p-5 card-hover">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Competitive alternatives</p>
+          <ul class="space-y-2">
+            <template x-for="item in results?.positioning?.competitive_alternatives || []">
+              <li class="flex items-start gap-2 text-sm text-slate-700">
+                <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"></span>
+                <span x-text="item"></span>
+              </li>
+            </template>
+          </ul>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-100 p-5 card-hover">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Unique attributes</p>
+          <ul class="space-y-2">
+            <template x-for="item in results?.positioning?.unique_attributes || []">
+              <li class="flex items-start gap-2 text-sm text-slate-700">
+                <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
+                <span x-text="item"></span>
+              </li>
+            </template>
+          </ul>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-100 p-5 card-hover">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Value</p>
+          <p class="text-sm text-slate-700 leading-relaxed" x-text="results?.positioning?.value"></p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-100 p-5 card-hover">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Who cares a lot</p>
+          <p class="text-sm text-slate-700 leading-relaxed" x-text="results?.positioning?.who_cares"></p>
+        </div>
+      </div>
+      <div class="bg-indigo-50 rounded-2xl p-5 mt-4">
+        <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-3">Relevant tailwinds</p>
+        <div class="grid sm:grid-cols-3 gap-3">
+          <template x-for="trend in results?.positioning?.trends || []">
+            <div class="bg-white rounded-xl p-3.5 text-sm text-slate-700 leading-relaxed border border-indigo-100" x-text="trend"></div>
+          </template>
+        </div>
+      </div>
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 mt-4 flex gap-3">
+        <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+          <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">Positioning gap</p>
+          <p class="text-sm text-amber-900 leading-relaxed" x-text="results?.positioning_gap"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. BUYER JOURNEY -->
+    <section class="mb-14">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-sm">🗺️</div>
+        <h2 class="text-xl font-bold text-slate-900">Marketing Impact Map</h2>
+      </div>
+      <p class="text-sm text-slate-500 mb-6 max-w-2xl">The buyer journey runs through four stages. For each: what that buyer is doing or thinking, what observable signals exist, and where marketing can move them forward.</p>
+      <div class="space-y-3">
+        <template x-for="(jstage, idx) in results?.buyer_journey || []" :key="jstage.stage">
+          <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden card-hover">
+            <div class="grid sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+              <div class="p-5 flex items-start gap-3" :class="['bg-violet-50','bg-emerald-50','bg-sky-50','bg-orange-50'][idx]">
+                <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white mt-0.5 shrink-0"
+                     :class="['bg-violet-500','bg-emerald-500','bg-sky-500','bg-orange-500'][idx]"
+                     x-text="idx + 1"></div>
+                <div>
+                  <p class="font-semibold text-slate-900 text-sm" x-text="jstage.stage"></p>
+                  <p class="text-xs text-slate-500 mt-1 leading-relaxed" x-text="jstage.description"></p>
+                </div>
+              </div>
+              <div class="p-5">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">What they do</p>
+                <p class="text-sm text-slate-700 leading-relaxed" x-text="jstage.what_they_do"></p>
+              </div>
+              <div class="p-5">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">What we can see</p>
+                <p class="text-sm text-slate-700 leading-relaxed" x-text="jstage.what_we_can_see"></p>
+              </div>
+              <div class="p-5">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Marketing impact</p>
+                <p class="text-sm text-slate-700 leading-relaxed" x-text="jstage.marketing_impact"></p>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <!-- 3. CAMPAIGNS -->
+    <section class="mb-14">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center text-sm">🧪</div>
+        <h2 class="text-xl font-bold text-slate-900">Campaign Premises</h2>
+      </div>
+      <p class="text-sm text-slate-500 mb-6 max-w-2xl">Five testable hypotheses. Each pairs a specific audience segment with a core message and channel mix. Run them simultaneously to read signals fast — then double down on what's working.</p>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <template x-for="camp in results?.campaigns || []" :key="camp.id">
+          <div class="bg-white rounded-2xl border border-slate-100 p-5 card-hover flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+              <span class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 text-sm font-bold flex items-center justify-center" x-text="camp.id"></span>
+              <span class="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-lg" x-text="camp.name"></span>
+            </div>
+            <div class="space-y-3 flex-1">
+              <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Segment</p>
+                <p class="text-sm text-slate-700" x-text="camp.segment"></p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Message</p>
+                <p class="text-sm text-slate-700 font-medium" x-text="camp.message"></p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Channel mix</p>
+                <p class="text-sm text-slate-600" x-text="camp.channel_mix"></p>
+              </div>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-3 text-xs text-slate-500 italic leading-relaxed" x-text="camp.rationale"></div>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <!-- 4. RICE -->
+    <section class="mb-14">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-sm">📊</div>
+        <h2 class="text-xl font-bold text-slate-900">Campaign Prioritisation (RICE)</h2>
+      </div>
+      <p class="text-sm text-slate-500 mb-1 max-w-2xl">Reach × Impact × Confidence ÷ Effort. Higher score = run first.</p>
+      <p class="text-xs text-slate-400 mb-6">Impact: 3=massive · 2=high · 1=medium · 0.5=low · 0.25=minimal &nbsp;|&nbsp; Confidence & Reach: 1–10 &nbsp;|&nbsp; Effort: 1=low / 5=high</p>
+      <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50">
+              <th class="text-left text-xs font-semibold text-slate-400 uppercase tracking-wide px-5 py-3.5 w-8">#</th>
+              <th class="text-left text-xs font-semibold text-slate-400 uppercase tracking-wide px-4 py-3.5">Campaign</th>
+              <th class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wide px-4 py-3.5">Reach</th>
+              <th class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wide px-4 py-3.5">Impact</th>
+              <th class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wide px-4 py-3.5">Conf.</th>
+              <th class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wide px-4 py-3.5">Effort</th>
+              <th class="text-center text-xs font-semibold text-slate-400 uppercase tracking-wide px-4 py-3.5 w-28">RICE Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="(row, idx) in sortedRice" :key="row.id">
+              <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                <td class="px-5 py-4">
+                  <span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center" x-text="row.id"></span>
+                </td>
+                <td class="px-4 py-4">
+                  <p class="font-medium text-slate-800 text-sm" x-text="row.description"></p>
+                  <p class="text-xs text-slate-400 mt-0.5 italic" x-text="row.rationale"></p>
+                </td>
+                <td class="px-4 py-4 text-center font-mono text-slate-600" x-text="row.reach"></td>
+                <td class="px-4 py-4 text-center font-mono text-slate-600" x-text="row.impact"></td>
+                <td class="px-4 py-4 text-center font-mono text-slate-600" x-text="row.confidence"></td>
+                <td class="px-4 py-4 text-center font-mono text-slate-600" x-text="row.effort"></td>
+                <td class="px-4 py-4">
+                  <div class="flex flex-col items-center gap-1.5">
+                    <span class="font-bold text-indigo-700 text-base" x-text="row.score"></span>
+                    <div class="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div class="h-full bg-indigo-400 rounded-full rice-bar" :style="'width:' + Math.min(100, row.score / maxRice * 100) + '%'"></div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 5. MEASUREMENT -->
+    <section class="mb-6">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center text-sm">📏</div>
+        <h2 class="text-xl font-bold text-slate-900">Measurement</h2>
+      </div>
+      <p class="text-sm text-slate-500 mb-6 max-w-2xl">Guardrail KPIs tell you if growth is healthy. Channel benchmarks tell you if individual bets are working. Refine with actual data as campaigns run.</p>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
+            <p class="text-sm font-semibold text-slate-700">Growth KPI guardrails</p>
+          </div>
+          <div class="divide-y divide-slate-50">
+            <template x-for="kpi in results?.measurement?.growth_kpis || []">
+              <div class="px-5 py-3.5">
+                <div class="flex items-start justify-between gap-2">
+                  <p class="text-sm text-slate-700 font-medium flex-1" x-text="kpi.metric"></p>
+                  <span class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg whitespace-nowrap" x-text="kpi.target"></span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1" x-text="'Benchmark: ' + kpi.benchmark"></p>
+              </div>
+            </template>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
+            <p class="text-sm font-semibold text-slate-700">Channel benchmarks</p>
+          </div>
+          <div class="divide-y divide-slate-50">
+            <template x-for="cb in results?.measurement?.channel_benchmarks || []">
+              <div class="px-5 py-3.5">
+                <div class="flex items-start justify-between gap-2">
+                  <div class="flex-1">
+                    <p class="text-sm text-slate-700 font-medium">
+                      <span x-text="cb.channel"></span>
+                      <span class="text-slate-400 font-normal"> · </span>
+                      <span class="text-slate-500 font-normal" x-text="cb.metric"></span>
+                    </p>
+                    <p class="text-xs text-slate-400 mt-0.5" x-text="cb.context"></p>
+                  </div>
+                  <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg whitespace-nowrap" x-text="cb.benchmark"></span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="text-xs text-center text-slate-400 mt-12">
+      This framework is AI-generated based on publicly available information and your inputs.
+      It's a starting point for strategy, not a final answer. Validate with real customers.
+    </p>
+  </div>
+
+  <script>
+  function pmfApp() {
+    return {
+      step: 0, isLoading: false, errorMsg: '', results: null, generatedAt: '',
+      loadingMessages: [
+        'Reading your website…',
+        'Applying April Dunford\'s positioning framework…',
+        'Mapping the buyer journey…',
+        'Drafting five campaign premises…',
+        'Running RICE prioritisation…',
+        'Finalising your measurement framework…',
+      ],
+      loadingMessage: 'Analysing your product…',
+      _loadingIdx: 0, _loadingTimer: null,
+      form: { product_name: '', description: '', website_url: '', stage: '', icp: '', challenge: '', api_key: '', deck_file: null },
+      stages: [
+        { value: 'pre-revenue', label: 'Pre-revenue', sub: 'Validating with first users' },
+        { value: 'seed',        label: 'Seed',        sub: 'Early revenue, finding PMF' },
+        { value: 'series-a',   label: 'Series A',    sub: 'Scaling what works' },
+        { value: 'series-b+',  label: 'Series B+',   sub: 'Optimising growth engines' },
+      ],
+      features: [
+        { icon: '🎯', bg: 'bg-violet-100', title: 'Positioning check', desc: 'April Dunford\'s framework: alternatives, unique attributes, value, and who cares.' },
+        { icon: '🗺️', bg: 'bg-emerald-100', title: 'Buyer journey map', desc: 'Four awareness stages with observable signals and the marketing levers for each.' },
+        { icon: '🧪', bg: 'bg-sky-100', title: 'Five campaign premises', desc: 'Testable hypotheses with segment, message, and channel mix — ready to run in parallel.' },
+        { icon: '📊', bg: 'bg-amber-100', title: 'RICE prioritisation', desc: 'Reach × Impact × Confidence ÷ Effort scores so you know which bet to place first.' },
+        { icon: '📏', bg: 'bg-rose-100', title: 'Measurement guardrails', desc: 'Growth KPIs and channel benchmarks calibrated to your stage and B2B SaaS context.' },
+        { icon: '⬇️', bg: 'bg-slate-100', title: 'Export to Markdown', desc: 'Download the full framework as a clean .md file to share with your team.' },
+      ],
+      nextStep() { this.step++; },
+      handleFile(e) { this.form.deck_file = e.target.files[0] || null; },
+      reset() { this.results = null; this.errorMsg = ''; this.step = 0; },
+      get sortedRice() { return [...(this.results?.rice || [])].sort((a, b) => b.score - a.score); },
+      get maxRice() { return Math.max(...(this.results?.rice || []).map(r => r.score), 1); },
+      startLoadingMessages() {
+        this.loadingMessage = this.loadingMessages[0]; this._loadingIdx = 0;
+        this._loadingTimer = setInterval(() => {
+          this._loadingIdx = (this._loadingIdx + 1) % this.loadingMessages.length;
+          this.loadingMessage = this.loadingMessages[this._loadingIdx];
+        }, 2800);
+      },
+      stopLoadingMessages() { if (this._loadingTimer) clearInterval(this._loadingTimer); },
+      async analyze() {
+        this.errorMsg = ''; this.isLoading = true; this.startLoadingMessages();
+        const fd = new FormData();
+        Object.entries(this.form).forEach(([k, v]) => {
+          if (k === 'deck_file') { if (v) fd.append('deck_file', v); }
+          else fd.append(k, v ?? '');
+        });
+        try {
+          const resp = await fetch('/analyze', { method: 'POST', body: fd });
+          const data = await resp.json();
+          if (!resp.ok || data.error) throw new Error(data.error || 'Unknown error');
+          this.results = data.data;
+          this.generatedAt = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        } catch (err) {
+          this.errorMsg = err.message;
+        } finally {
+          this.isLoading = false; this.stopLoadingMessages();
+        }
+      },
+      exportMarkdown() {
+        const r = this.results; if (!r) return;
+        const lines = [
+          `# PMF Marketing Framework — ${r.company_name}`,
+          `_Generated ${this.generatedAt} · trusted-brand-demand_`, '',  '---', '',
+          '## Positioning', '',
+          `**Product:** ${r.positioning.product_description}`,
+          `**Market category:** ${r.positioning.market_category}`,
+          `**Ownable frame:** "${r.positioning.market_frame}"`, '',
+          '| Competitive Alternatives | Unique Attributes | Value | Who Cares |',
+          '|---|---|---|---|',
+          `| ${r.positioning.competitive_alternatives.join('<br>')} | ${r.positioning.unique_attributes.join('<br>')} | ${r.positioning.value} | ${r.positioning.who_cares} |`, '',
+          '**Tailwinds:** ' + r.positioning.trends.join(' · '), '',
+          `> **Positioning gap:** ${r.positioning_gap}`, '', '---', '',
+          '## Marketing Impact Map', '',
+          '| Stage | What they do | What we can see | Marketing impact |',
+          '|---|---|---|---|',
+          ...(r.buyer_journey || []).map(s => `| **${s.stage}** | ${s.what_they_do} | ${s.what_we_can_see} | ${s.marketing_impact} |`),
+          '', '---', '', '## Campaign Premises', '',
+          ...(r.campaigns || []).flatMap(c => [
+            `### Campaign ${c.id} — ${c.name}`,
+            `- **Segment:** ${c.segment}`, `- **Message:** ${c.message}`,
+            `- **Channel mix:** ${c.channel_mix}`, `- **Rationale:** _${c.rationale}_`, '',
+          ]),
+          '---', '', '## RICE Prioritisation', '',
+          '| # | Campaign | Reach | Impact | Confidence | Effort | RICE Score |',
+          '|---|---|---|---|---|---|---|',
+          ...(this.sortedRice || []).map(row => `| ${row.id} | ${row.description} | ${row.reach} | ${row.impact} | ${row.confidence} | ${row.effort} | **${row.score}** |`),
+          '', '---', '', '## Measurement', '',
+          '### Growth KPI Guardrails', '',
+          '| Metric | Target | Benchmark |', '|---|---|---|',
+          ...(r.measurement?.growth_kpis || []).map(k => `| ${k.metric} | ${k.target} | ${k.benchmark} |`),
+          '', '### Channel Benchmarks', '',
+          '| Channel | Metric | Benchmark | Context |', '|---|---|---|---|',
+          ...(r.measurement?.channel_benchmarks || []).map(cb => `| ${cb.channel} | ${cb.metric} | ${cb.benchmark} | ${cb.context} |`),
+          '', '---', '', '_AI-generated. Validate assumptions with real customers._',
+        ];
+        const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `pmf-framework-${(r.company_name || 'output').toLowerCase().replace(/\s+/g,'-')}.md`;
+        a.click();
+      },
+    };
+  }
+  </script>
+</body>
+</html>
