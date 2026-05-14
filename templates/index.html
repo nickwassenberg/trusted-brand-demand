@@ -219,11 +219,8 @@
             </div>
           </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1.5">
-            Anthropic API key
-            <span class="font-normal text-slate-400 ml-1">· if not set via <code class="bg-slate-100 px-1 rounded text-xs">ANTHROPIC_API_KEY</code> env var</span>
-          </label>
+        <div x-show="!apiKeyConfigured">
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">Anthropic API key</label>
           <input type="password" x-model="form.api_key" placeholder="sk-ant-..."
                  class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition" />
           <p class="text-xs text-slate-400 mt-1.5">Never stored. Sent only to the Anthropic API for this request.</p>
@@ -556,6 +553,7 @@
       ],
       loadingMessage: 'Analysing your product…',
       _loadingIdx: 0, _loadingTimer: null,
+      apiKeyConfigured: false,
       form: { product_name: '', description: '', website_url: '', stage: '', icp: '', challenge: '', api_key: '', deck_file: null },
       stages: [
         { value: 'pre-revenue', label: 'Pre-revenue', sub: 'Validating with first users' },
@@ -571,6 +569,7 @@
         { icon: '📏', bg: 'bg-rose-100', title: 'Measurement guardrails', desc: 'Growth KPIs and channel benchmarks calibrated to your stage and B2B SaaS context.' },
         { icon: '⬇️', bg: 'bg-slate-100', title: 'Export to Markdown', desc: 'Download the full framework as a clean .md file to share with your team.' },
       ],
+      async init() { try { const r = await fetch('/config'); const d = await r.json(); this.apiKeyConfigured = !!d.apiKeyConfigured; } catch(e) {} },
       nextStep() { this.step++; },
       handleFile(e) { this.form.deck_file = e.target.files[0] || null; },
       reset() { this.results = null; this.errorMsg = ''; this.step = 0; },

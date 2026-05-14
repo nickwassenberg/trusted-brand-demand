@@ -13,6 +13,9 @@ import requests
 from flask import Flask, render_template, request, jsonify
 from anthropic import Anthropic
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+
+load_dotenv()
 
 try:
     import pdfplumber
@@ -182,6 +185,12 @@ Generate the complete PMF Marketing framework for this company.
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/config")
+def config():
+    """Tell the frontend whether an API key is already configured server-side."""
+    return jsonify({"apiKeyConfigured": bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())})
 
 
 @app.route("/analyze", methods=["POST"])
